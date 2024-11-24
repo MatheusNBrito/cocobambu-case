@@ -1,13 +1,20 @@
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, explode, lit, sum, year, month, dayofmonth
 from pyspark.sql.types import *
+
+import sys
+sys.path.append("c:/Projetos/cocobambu-case")
+
+from main.datapipeline.generate_output.books.config import load_config
 import json
+
+# Carregar configurações
+config = load_config()
+input_path = config["input_paths"]["ERP_PATH"]
+output_path = config["output_paths"]["OUTPUT_PATH"]
 
 # Inicializar SparkSession
 spark = SparkSession.builder.appName("starSchemaTables").getOrCreate()
-
-# Caminho de entrada para o JSON
-input_path = "C:/Projetos/cocobambu-case/src/data/raw/ERP.json"
 
 # Verificar se o JSON é válido
 with open(input_path, "r") as f:
@@ -96,8 +103,6 @@ dim_taxes = guest_checks.select(
     col("tax.taxRate").alias("taxRate")
 ).distinct()
 
-# Salvar Tabelas em Parquet
-output_path = "C:/Projetos/cocobambu-case/src/data/processed"
 
 fact_sales.write.parquet(f"{output_path}/FactSales", mode="overwrite")
 dim_date.write.parquet(f"{output_path}/DimDate", mode="overwrite")
