@@ -1,11 +1,11 @@
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, explode, lit, sum, year, month, dayofmonth
 from pyspark.sql.types import *
-
 import sys
 sys.path.append("c:/Projetos/cocobambu-case")
 
 from main.datapipeline.generate_output.books.config import load_config
+from main.datapipeline.generate_output.books import constants
 import json
 
 # Carregar configurações
@@ -31,60 +31,60 @@ erp_raw_df = spark.read \
 
 # Explodir guestChecks e incluir locRef no contexto
 guest_checks = erp_raw_df.select(
-    col("locRef").alias("storeId"),  # Incluir locRef
-    explode(col("guestChecks")).alias("guestCheck")
+    col(constants.LOC_REF).alias(constants.STORE_ID),  # Incluir locRef
+    explode(col(constants.GUEST_CHECKS)).alias("guestCheck")
 )
 
 # Expandir guestChecks mantendo locRef
 guest_checks = guest_checks.select(
-    col("storeId"),  # Mantém locRef no contexto
+    col(constants.STORE_ID),  # Mantém locRef no contexto
     col("guestCheck.*")
 )
 
 # Criar Tabela Fato: Sales
 fact_sales = guest_checks.select(
-    col("guestCheckId"),
-    col("storeId"),  # locRef já mapeado como storeId
-    col("opnBusDt").alias("busDt"),
-    col("subTtl").alias("subTotal"),
-    col("dscTtl").alias("discountTotal"),
-    col("chkTtl").alias("checkTotal"),
-    col("payTtl").alias("paidTotal")
+    col(constants.GUEST_CHECK_ID),
+    col(constants.STORE_ID),  # locRef já mapeado como storeId
+    col(constants.OPEN_BUS_DT).alias("busDt"),
+    col(constants.SUB_TOTAL).alias("subTotal"),
+    col(constants.DISCOUNT_TOTAL).alias("discountTotal"),
+    col(constants.CHECK_TOTAL).alias("checkTotal"),
+    col(constants.PAID_TOTAL).alias("paidTotal")
 )
 
 # Adicionar somatório de taxes.taxCollTtl
 taxes = guest_checks.select(
-    col("guestCheckId"),
-    explode(col("taxes")).alias("tax")
+    col(constants.GUEST_CHECK_ID),
+    explode(col(constants.TAXES)).alias("tax")
 ).select(
-    col("guestCheckId"),
-    col("tax.taxCollTtl").alias("taxCollected")
+    col(constants.GUEST_CHECK_ID),
+    col("tax." + constants.TAX_COLL_TTL).alias("taxCollected")
 )
 
 fact_sales = fact_sales.join(
-    taxes.groupBy("guestCheckId").agg(sum("taxCollected").alias("taxCollected")),
-    on="guestCheckId",
+    taxes.groupBy(constants.GUEST_CHECK_ID).agg(sum("taxCollected").alias("taxCollected")),
+    on=constants.GUEST_CHECK_ID,
     how="left"
 )
 
 # Criar Dimensão Date
 dim_date = guest_checks.select(
-    col("opnBusDt").alias("date"),
-    year(col("opnBusDt")).alias("year"),
-    month(col("opnBusDt")).alias("month"),
-    dayofmonth(col("opnBusDt")).alias("day")
+    col(constants.OPEN_BUS_DT).alias("date"),
+    year(col(constants.OPEN_BUS_DT)).alias("year"),
+    month(col(constants.OPEN_BUS_DT)).alias("month"),
+    dayofmonth(col(constants.OPEN_BUS_DT)).alias("day")
 ).distinct()
 
 # Criar Dimensão Store
 dim_store = erp_raw_df.select(
-    col("locRef").alias("storeId"),
+    col(constants.LOC_REF).alias(constants.STORE_ID),
     lit("Coco Bambu").alias("storeLocation")  # Pode ser ajustado conforme necessário
 ).distinct()
 
 # Criar Dimensão MenuItem
 detail_lines = guest_checks.select(
-    col("guestCheckId"),
-    explode(col("detailLines")).alias("detailLine")
+    col(constants.GUEST_CHECK_ID),
+    explode(col(constants.DETAIL_LINES)).alias("detailLine")
 )
 
 dim_menu_item = detail_lines.select(
@@ -95,19 +95,19 @@ dim_menu_item = detail_lines.select(
 
 # Criar Dimensão Taxes
 dim_taxes = guest_checks.select(
-    col("guestCheckId"),
-    explode(col("taxes")).alias("tax")
+    col(constants.GUEST_CHECK_ID),
+    explode(col(constants.TAXES)).alias("tax")
 ).select(
-    col("tax.taxNum").alias("taxId"),
-    col("tax.taxCollTtl").alias("taxAmount"),
-    col("tax.taxRate").alias("taxRate")
+    col("tax." + constants.TAX_NUM).alias("taxId"),
+    col("tax." + constants.TAX_COLL_TTL).alias("taxAmount"),
+    col("tax." + constants.TAX_RATE).alias("taxRate")
 ).distinct()
 
-
-fact_sales.write.parquet(f"{output_path}/FactSales", mode="overwrite")
-dim_date.write.parquet(f"{output_path}/DimDate", mode="overwrite")
-dim_store.write.parquet(f"{output_path}/DimStore", mode="overwrite")
-dim_menu_item.write.parquet(f"{output_path}/DimMenuItem", mode="overwrite")
-dim_taxes.write.parquet(f"{output_path}/DimTaxes", mode="overwrite")
+# Salvar os resultados em Parquet
+fact_sales.write.parquet(f"{constants.OUTPUT_PATH}/FactSales", mode="overwrite")
+dim_date.write.parquet(f"{constants.OUTPUT_PATH}/DimDate", mode="overwrite")
+dim_store.write.parquet(f"{constants.OUTPUT_PATH}/DimStore", mode="overwrite")
+dim_menu_item.write.parquet(f"{constants.OUTPUT_PATH}/DimMenuItem", mode="overwrite")
+dim_taxes.write.parquet(f"{constants.OUTPUT_PATH}/DimTaxes", mode="overwrite")
 
 print("Pipeline concluído com sucesso!")
