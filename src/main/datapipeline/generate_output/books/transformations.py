@@ -4,10 +4,10 @@ from main.datapipeline.generate_output.books.constants import *
 # Função para explodir guestChecks e incluir locRef no contexto
 def expand_guest_checks(df):
     return df.select(
-        col(LOC_REF).alias(STORE_ID),  # Usando constante LOC_REF
-        explode(col(GUEST_CHECKS)).alias("guestCheck")  # Usando constante GUEST_CHECKS
+        col(LOC_REF).alias(STORE_ID),
+        explode(col(GUEST_CHECKS)).alias("guestCheck") 
     ).select(
-        col(STORE_ID),  # Usando constante STORE_ID
+        col(STORE_ID), 
         col("guestCheck.*")
     )
 
@@ -26,10 +26,10 @@ def create_fact_sales(guest_checks):
     # Extrai e agrega as taxas
     taxes = guest_checks.select(
         col(GUEST_CHECK_ID).alias("sales_id"),
-        explode(col(TAXES)).alias("tax")  # Usando constante TAXES
+        explode(col(TAXES)).alias("tax")
     ).select(
         col("sales_id"),
-        col("tax." + TAX_COLL_TTL).alias("tax_collected")  # Usando constante TAX_COLL_TTL
+        col("tax." + TAX_COLL_TTL).alias("tax_collected")
     )
 
     # Realiza o join entre fact_sales e as taxas agregadas
@@ -59,10 +59,10 @@ def create_fact_sales(guest_checks):
 # Função para criar a Dimensão Date
 def create_dim_store(df):
     # Adiciona 'store_id' ao DataFrame
-    df = df.withColumn("store_id", col("locRef"))  # Renomeia 'locRef' para 'store_id'
+    df = df.withColumn("store_id", col("locRef"))
     
     return df.select(
-        col("store_id"),  # Usando o nome consistente 'store_id'
+        col("store_id"),
         lit("Default Location").alias("storeLocation")
     ).distinct()
 
@@ -79,7 +79,7 @@ def create_dim_date(guest_checks):
 # Função para criar a Dimensão MenuItem
 def create_dim_menu_item(guest_checks):
     detail_lines = guest_checks.select(
-        explode(col(DETAIL_LINES)).alias("detailLine")  # Usando constante DETAIL_LINES
+        explode(col(DETAIL_LINES)).alias("detailLine")
     )
 
     return detail_lines.select(
@@ -92,11 +92,11 @@ def create_dim_menu_item(guest_checks):
 def create_dim_taxes(guest_checks):
     return guest_checks.select(
         col(GUEST_CHECK_ID).alias("guestCheckId"),
-        explode(col(TAXES)).alias("tax")  # Usando constante TAXES
+        explode(col(TAXES)).alias("tax")
     ).select(
-        col(f"tax.{TAX_NUM}").alias("taxId"),  # Usando constante TAX_NUM
-        col(f"tax.{TAX_COLL_TTL}").alias("taxAmount"),  # Usando constante TAX_COLL_TTL
-        col(f"tax.{TAX_RATE}").alias("taxRate")  # Usando constante TAX_RATE
+        col(f"tax.{TAX_NUM}").alias("taxId"),
+        col(f"tax.{TAX_COLL_TTL}").alias("taxAmount"),
+        col(f"tax.{TAX_RATE}").alias("taxRate") 
     ).distinct()
 
 def add_partition_columns(dataframe, date_column, store_column=None):
@@ -150,8 +150,8 @@ def save_dim_date(dim_date, lake_base_path):
     save_to_data_lake(
         dim_date,
         f"{lake_base_path}/dim_date",
-        store_column=None,  # Não particiona por loja
-        date_column="date"  # Particiona por ano e mês
+        store_column=None,  
+        date_column="date"  
     )
 
 # Função para salvar a dimensão Store no Data Lake
@@ -159,8 +159,8 @@ def save_dim_store(dim_store, lake_base_path):
     save_to_data_lake(
         dim_store,
         f"{lake_base_path}/dim_store",
-        store_column=None,  # Sem particionamento por loja
-        date_column=None    # Sem particionamento por data
+        store_column=None,  
+        date_column=None    
     )
 
 # Função para salvar a dimensão MenuItem no Data Lake
@@ -168,8 +168,8 @@ def save_dim_menu_item(dim_menu_item, lake_base_path):
     save_to_data_lake(
         dim_menu_item,
         f"{lake_base_path}/dim_menu_item",
-        store_column=None,  # Sem particionamento por loja
-        date_column=None    # Sem particionamento por data
+        store_column=None,  
+        date_column=None  
     )
 
 # Função para salvar a dimensão Taxes no Data Lake
@@ -177,8 +177,8 @@ def save_dim_taxes(dim_taxes, lake_base_path):
     save_to_data_lake(
         dim_taxes,
         f"{lake_base_path}/dim_taxes",
-        store_column=None,  # Sem particionamento por loja
-        date_column=None    # Sem particionamento por data
+        store_column=None, 
+        date_column=None    
     )
 
 # Função para salvar no banco de dados

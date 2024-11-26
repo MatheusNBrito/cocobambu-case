@@ -1,7 +1,6 @@
 from pyspark.sql import SparkSession
 from pyspark.sql.types import *
 from main.datapipeline.generate_output.books.config import load_config
-from main.datapipeline.generate_output.books import constants
 from main.datapipeline.generate_output.books.data_loanding import *
 from main.datapipeline.generate_output.books.transformations import *
 
@@ -17,7 +16,7 @@ db_properties = {
     "user": db_config["user"],
     "password": db_config["password"],
     "driver": db_config["driver"],
-    "cascadeTruncate": str(db_config["cascade_truncate"])  # Spark exige string
+    "cascadeTruncate": str(db_config["cascade_truncate"]) 
 }
 
 # Inicializar SparkSession
