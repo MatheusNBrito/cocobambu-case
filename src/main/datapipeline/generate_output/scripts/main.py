@@ -10,13 +10,14 @@ config = load_config()
 input_path = config["input_paths"]["ERP_PATH"]
 lake_base_path = config["output_paths"]["LAKE_BASE_PATH"]
 
-# Configurações do banco de dados PostgreSQL
-db_url = "jdbc:postgresql://localhost:5432/cocobambu_case" 
+# Carregar configurações do banco de dados
+db_config = config["database"]
+db_url = db_config["url"]
 db_properties = {
-    "user": "postgres",  
-    "password": "1475963",  
-    "driver": "org.postgresql.Driver",
-    "cascadeTruncate": "true" 
+    "user": db_config["user"],
+    "password": db_config["password"],
+    "driver": db_config["driver"],
+    "cascadeTruncate": str(db_config["cascade_truncate"])  # Spark exige string
 }
 
 # Inicializar SparkSession
@@ -69,8 +70,6 @@ if dim_taxes is None:
 dim_taxes.show()
 print("schema dim_taxes:")
 dim_taxes.printSchema()
-
-
 
 try:
     save_to_database(fact_sales, "FactSales", db_url, db_properties)
