@@ -4,8 +4,8 @@ from main.datapipeline.generate_output.books.config import load_config
 config = load_config("C:/Projetos/cocobambu-case/src/main/datapipeline/generate_output/resources/application.conf")
 
 # Definir as constantes para os caminhos de input e output a partir do arquivo de configuração
-INPUT_PATH = config["input_paths"]["ERP_PATH"]
-OUTPUT_PATH = config["output_paths"]["OUTPUT_PATH"]
+INPUT_PATHS = config["input_paths"]["ERP_PATH"]
+OUTPUT_PATHS = config["output_paths"]["LAKE_BASE_PATH"]
 
 # Definir os nomes das colunas como constantes
 LOC_REF = "locRef"

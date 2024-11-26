@@ -3,19 +3,12 @@ from pyspark.sql.types import *
 from main.datapipeline.generate_output.books.config import load_config
 from main.datapipeline.generate_output.books import constants
 from main.datapipeline.generate_output.books.data_loanding import *
-from main.datapipeline.generate_output.books.transformations import (
-    expand_guest_checks,
-    create_fact_sales,
-    create_dim_date,
-    create_dim_store,
-    create_dim_menu_item,
-    create_dim_taxes,
-    save_to_database,
-)
+from main.datapipeline.generate_output.books.transformations import *
 
 # Carregar configurações
 config = load_config()
 input_path = config["input_paths"]["ERP_PATH"]
+lake_base_path = config["output_paths"]["LAKE_BASE_PATH"]
 
 # Configurações do banco de dados PostgreSQL
 db_url = "jdbc:postgresql://localhost:5432/cocobambu_case" 
@@ -39,6 +32,7 @@ erp_raw_df = load_json_as_dataframe(spark, input_path)
 guest_checks = expand_guest_checks(erp_raw_df)
 guest_checks.show(truncate=False)
 guest_checks.printSchema()
+
 # Criar Tabela Fato: Sales
 fact_sales = create_fact_sales(guest_checks)
 if fact_sales is None:
@@ -54,7 +48,6 @@ if dim_date is None:
 dim_date.show()
 print("schema dim_date:")
 dim_date.printSchema()
-
 
 dim_store = create_dim_store(erp_raw_df)
 if dim_store is None:
@@ -89,5 +82,13 @@ try:
 except Exception as e:
     print(f"Erro ao salvar dados no banco de dados: {e}")
 
+try: # Salvar no Data Lake
+    save_fact_sales(fact_sales, lake_base_path)
+    save_dim_date(dim_date, lake_base_path)
+    save_dim_store(dim_store, lake_base_path)
+    save_dim_menu_item(dim_menu_item, lake_base_path)
+    save_dim_taxes(dim_taxes, lake_base_path)
+except Exception as e:
+    print(f"Erro ao salvar dados no datalake: {e}")
 
-print("Pipeline concluído com sucesso! Tabelas salvas no banco de dados.")
+print("Pipeline concluído com sucesso! Tabelas salvas no lake.")
