@@ -58,7 +58,6 @@ def create_fact_sales(guest_checks):
 
 # Função para criar a Dimensão Date
 def create_dim_store(df):
-    # Adiciona 'store_id' ao DataFrame
     df = df.withColumn("store_id", col("locRef"))
     
     return df.select(
@@ -110,7 +109,6 @@ def add_partition_columns(dataframe, date_column, store_column=None):
 
 def save_to_data_lake(dataframe, base_path, store_column=None, date_column=None):
     try:
-        # Adicionar colunas de particionamento apenas se especificadas
         if date_column:
             dataframe = dataframe.withColumn("year", year(col(date_column))) \
                                  .withColumn("month", month(col(date_column)))

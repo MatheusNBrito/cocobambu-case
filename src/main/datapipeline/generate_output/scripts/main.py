@@ -30,45 +30,28 @@ erp_raw_df = load_json_as_dataframe(spark, input_path)
 
 # Explodir guestChecks e incluir locRef no contexto
 guest_checks = expand_guest_checks(erp_raw_df)
-guest_checks.show(truncate=False)
-guest_checks.printSchema()
 
 # Criar Tabela Fato: Sales
 fact_sales = create_fact_sales(guest_checks)
 if fact_sales is None:
     raise ValueError("Erro: 'fact_sales' retornou None.")
-fact_sales.show()
-print("schema fact_sales:")
-fact_sales.printSchema()
 
 # Criar Dimensões
 dim_date = create_dim_date(guest_checks)
 if dim_date is None:
     raise ValueError("Erro: 'dim_date' retornou None.")
-dim_date.show()
-print("schema dim_date:")
-dim_date.printSchema()
 
 dim_store = create_dim_store(erp_raw_df)
 if dim_store is None:
     raise ValueError("Erro: 'dim_store' retornou None.")
-dim_store.show()
-print("schema dim_store:")
-dim_store.printSchema()
 
 dim_menu_item = create_dim_menu_item(guest_checks)
 if dim_menu_item is None:
     raise ValueError("Erro: 'dim_menu_item' retornou None.")
-dim_menu_item.show()
-print("schema dim_menu_item:")
-dim_menu_item.printSchema()
 
 dim_taxes = create_dim_taxes(guest_checks)
 if dim_taxes is None:
     raise ValueError("Erro: 'dim_taxes' retornou None.")
-dim_taxes.show()
-print("schema dim_taxes:")
-dim_taxes.printSchema()
 
 try:
     save_to_database(fact_sales, "FactSales", db_url, db_properties)
